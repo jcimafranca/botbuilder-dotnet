@@ -8,6 +8,9 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Bot.Expressions.Memory
 {
+    /// <summary>
+    /// Simple implement of <see cref="IMemory"/>.
+    /// </summary>
     public class SimpleObjectMemory : IMemory
     {
         private object memory = null;
@@ -17,12 +20,17 @@ namespace Microsoft.Bot.Expressions.Memory
         /// Initializes a new instance of the <see cref="SimpleObjectMemory"/> class.
         /// This wraps a simple object as IMemory.
         /// </summary>
-        /// <param name="memory">the object to wrap.</param>
+        /// <param name="memory">The object to wrap.</param>
         public SimpleObjectMemory(object memory)
         {
             this.memory = memory;
         }
 
+        /// <summary>
+        /// Transfer an common object to simple memory.
+        /// </summary>
+        /// <param name="obj">Common object.</param>
+        /// <returns>Simple memory instance.</returns>
         public static IMemory Wrap(object obj)
         {
             if (obj is IMemory)
@@ -33,6 +41,12 @@ namespace Microsoft.Bot.Expressions.Memory
             return new SimpleObjectMemory(obj);
         }
 
+        /// <summary>
+        /// Try get value from a given path.
+        /// </summary>
+        /// <param name="path">Given path.</param>
+        /// <param name="value">Resolved value.</param>
+        /// <returns>True if the memory contains an element with the specified key; otherwise, false.</returns>
         public bool TryGetValue(string path, out object value)
         {
             value = null;
@@ -50,9 +64,9 @@ namespace Microsoft.Bot.Expressions.Memory
             foreach (var part in parts)
             {
                 string error = null;
-                if (int.TryParse(part, out var idx) && BuiltInFunctions.TryParseList(curScope, out var li))
+                if (int.TryParse(part, out var idx) && ExpressionFunctions.TryParseList(curScope, out var li))
                 {
-                    (value, error) = BuiltInFunctions.AccessIndex(li, idx);
+                    (value, error) = ExpressionFunctions.AccessIndex(li, idx);
                     if (error != null)
                     {
                         return false;
@@ -60,7 +74,7 @@ namespace Microsoft.Bot.Expressions.Memory
                 }
                 else
                 {
-                    if (!BuiltInFunctions.TryAccessProperty(curScope, part, out value))
+                    if (!ExpressionFunctions.TryAccessProperty(curScope, part, out value))
                     {
                         return false;
                     }
@@ -77,6 +91,12 @@ namespace Microsoft.Bot.Expressions.Memory
         // if you set dialog.a.b = x, but dialog.a don't exist, this will result in an error
         // because we can't and shouldn't smart create structure in the middle
         // you can implement a customized Scope that support such behavior
+
+        /// <summary>
+        /// Set value to a given path.
+        /// </summary>
+        /// <param name="path">Memory path.</param>
+        /// <param name="value">Value to set.</param>
         public void SetValue(string path, object value)
         {
             if (memory == null)
@@ -95,15 +115,15 @@ namespace Microsoft.Bot.Expressions.Memory
             // find the 2nd last value, the container
             for (var i = 0; i < parts.Length - 1; i++)
             {
-                if (int.TryParse(parts[i], out var index) && BuiltInFunctions.TryParseList(curScope, out var li))
+                if (int.TryParse(parts[i], out var index) && ExpressionFunctions.TryParseList(curScope, out var li))
                 {
                     curPath += $"[{parts[i]}]";
-                    (curScope, error) = BuiltInFunctions.AccessIndex(li, index);
+                    (curScope, error) = ExpressionFunctions.AccessIndex(li, index);
                 }
                 else
                 {
                     curPath += $".{parts[i]}";
-                    if (BuiltInFunctions.TryAccessProperty(curScope, parts[i], out var newScope))
+                    if (ExpressionFunctions.TryAccessProperty(curScope, parts[i], out var newScope))
                     {
                         curScope = newScope;
                     }
@@ -122,7 +142,7 @@ namespace Microsoft.Bot.Expressions.Memory
             // set the last value
             if (int.TryParse(parts.Last(), out var idx))
             {
-                if (BuiltInFunctions.TryParseList(curScope, out var li))
+                if (ExpressionFunctions.TryParseList(curScope, out var li))
                 {
                     if (li is JArray)
                     {
@@ -155,7 +175,7 @@ namespace Microsoft.Bot.Expressions.Memory
             }
             else
             {
-                (_, error) = BuiltInFunctions.SetProperty(curScope, parts.Last(), value);
+                (_, error) = ExpressionFunctions.SetProperty(curScope, parts.Last(), value);
                 if (error != null)
                 {
                     return;

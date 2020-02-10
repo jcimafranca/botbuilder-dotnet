@@ -16,13 +16,21 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Bot.Builder.LanguageGeneration
 {
+    /// <summary>
+    /// LG template Evaluator.
+    /// </summary>
     public class Evaluator : LGFileParserBaseVisitor<object>
     {
         public const string LGType = "lgType";
-        public static readonly Regex ExpressionRecognizeRegex = new Regex(@"(?<!\\)@{(((\'([^'\r\n])*?\')|(\""([^""\r\n])*?\""))|[^\r\n{}'""])*?}", RegexOptions.Compiled);
+        public static readonly Regex ExpressionRecognizeRegex = new Regex(@"(?<!\\)@{((\'[^\r\n\']*\')|(\""[^\""\r\n]*\"")|(\`(\\\`|[^\`])*\`)|([^\r\n{}'""`]))*?}", RegexOptions.Compiled);
         private const string ReExecuteSuffix = "!";
         private readonly Stack<EvaluationTarget> evaluationTargetStack = new Stack<EvaluationTarget>();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Evaluator"/> class.
+        /// </summary>
+        /// <param name="templates">Template list.</param>
+        /// <param name="expressionEngine">expression engine.</param>
         public Evaluator(List<LGTemplate> templates, ExpressionEngine expressionEngine)
         {
             Templates = templates;
@@ -32,12 +40,36 @@ namespace Microsoft.Bot.Builder.LanguageGeneration
             ExpressionEngine = new ExpressionEngine(CustomizedEvaluatorLookup(expressionEngine.EvaluatorLookup));
         }
 
+        /// <summary>
+        /// Gets templates.
+        /// </summary>
+        /// <value>
+        /// Templates.
+        /// </value>
         public List<LGTemplate> Templates { get; }
 
+        /// <summary>
+        /// Gets expression engine.
+        /// </summary>
+        /// <value>
+        /// Expression engine.
+        /// </value>
         public ExpressionEngine ExpressionEngine { get; }
 
+        /// <summary>
+        /// Gets templateMap.
+        /// </summary>
+        /// <value>
+        /// TemplateMap.
+        /// </value>
         public Dictionary<string, LGTemplate> TemplateMap { get; }
 
+        /// <summary>
+        /// Evaluate a template with given name and scope.
+        /// </summary>
+        /// <param name="inputTemplateName">template name.</param>
+        /// <param name="scope">scope.</param>
+        /// <returns>Evaluate result.</returns>
         public object EvaluateTemplate(string inputTemplateName, object scope)
         {
             if (!(scope is CustomizedMemory))
@@ -116,7 +148,7 @@ namespace Microsoft.Bot.Builder.LanguageGeneration
                 else
                 {
                     // When the same property exists in both the calling template as well as callee, the content in caller will trump any content in 
-                    var propertyObject = JObject.FromObject(EvalExpression(body.objectStructureLine().GetText()));
+                    var propertyObject = JObject.FromObject(EvalExpression(body.objectStructureLine().GetText(), true));
 
                     // Full reference to another structured template is limited to the structured template with same type 
                     if (propertyObject[LGType] != null && propertyObject[LGType].ToString() == typeName)
@@ -336,7 +368,7 @@ namespace Microsoft.Bot.Builder.LanguageGeneration
             }
         }
 
-        private object EvalExpression(string exp)
+        private object EvalExpression(string exp, bool throwOnNull = false)
         {
             exp = exp.TrimExpression();
             var (result, error) = EvalByExpressionEngine(exp, CurrentTarget().Scope);
@@ -347,7 +379,14 @@ namespace Microsoft.Bot.Builder.LanguageGeneration
 
             if (result == null)
             {
-                throw new Exception(LGErrors.NullExpression(exp));
+                if (throwOnNull)
+                {
+                    throw new Exception(LGErrors.NullExpression(exp));
+                }
+                else
+                {
+                    result = "null";
+                }
             }
 
             return result;
@@ -379,21 +418,21 @@ namespace Microsoft.Bot.Builder.LanguageGeneration
 
             if (this.TemplateMap.ContainsKey(templateName))
             {
-                return new ExpressionEvaluator(templateName, BuiltInFunctions.Apply(this.TemplateEvaluator(name)), ReturnType.Object, this.ValidTemplateReference);
+                return new ExpressionEvaluator(templateName, ExpressionFunctions.Apply(this.TemplateEvaluator(name)), ReturnType.Object, this.ValidTemplateReference);
             }
 
             const string template = "template";
 
             if (name.Equals(template))
             {
-                return new ExpressionEvaluator(template, BuiltInFunctions.Apply(this.TemplateFunction()), ReturnType.Object, this.ValidateTemplateFunction);
+                return new ExpressionEvaluator(template, ExpressionFunctions.Apply(this.TemplateFunction()), ReturnType.Object, this.ValidateTemplateFunction);
             }
 
             const string fromFile = "fromFile";
 
             if (name.Equals(fromFile))
             {
-                return new ExpressionEvaluator(fromFile, BuiltInFunctions.Apply(this.FromFile()), ReturnType.String, BuiltInFunctions.ValidateUnaryString);
+                return new ExpressionEvaluator(fromFile, ExpressionFunctions.Apply(this.FromFile()), ReturnType.String, ExpressionFunctions.ValidateUnaryString);
             }
 
             const string activityAttachment = "ActivityAttachment";
@@ -402,16 +441,16 @@ namespace Microsoft.Bot.Builder.LanguageGeneration
             {
                 return new ExpressionEvaluator(
                     activityAttachment,
-                    BuiltInFunctions.Apply(this.ActivityAttachment()),
+                    ExpressionFunctions.Apply(this.ActivityAttachment()),
                     ReturnType.Object,
-                    (expr) => BuiltInFunctions.ValidateOrder(expr, null, ReturnType.Object, ReturnType.String));
+                    (expr) => ExpressionFunctions.ValidateOrder(expr, null, ReturnType.Object, ReturnType.String));
             }
 
             const string isTemplate = "isTemplate";
 
             if (name.Equals(isTemplate))
             {
-                return new ExpressionEvaluator(isTemplate, BuiltInFunctions.Apply(this.IsTemplate()), ReturnType.Boolean, BuiltInFunctions.ValidateUnaryString);
+                return new ExpressionEvaluator(isTemplate, ExpressionFunctions.Apply(this.IsTemplate()), ReturnType.Boolean, ExpressionFunctions.ValidateUnaryString);
             }
 
             return baseLookup(name);
@@ -485,7 +524,7 @@ namespace Microsoft.Bot.Builder.LanguageGeneration
         // Validator for template(...)
         private void ValidateTemplateFunction(Expression expression)
         {
-            BuiltInFunctions.ValidateAtLeastOne(expression);
+            ExpressionFunctions.ValidateAtLeastOne(expression);
 
             var children0 = expression.Children[0];
 
