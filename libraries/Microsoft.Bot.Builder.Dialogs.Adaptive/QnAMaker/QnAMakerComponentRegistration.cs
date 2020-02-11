@@ -6,7 +6,7 @@ using Microsoft.Bot.Builder.Dialogs.Adaptive.QnA;
 using Microsoft.Bot.Builder.Dialogs.Adaptive.QnA.Recognizers;
 using Microsoft.Bot.Builder.Dialogs.Declarative;
 using Microsoft.Bot.Builder.Dialogs.Declarative.Resources;
-using Microsoft.Bot.Expressions.Properties.Converters;
+using Microsoft.Bot.Expressions.Converters;
 using Newtonsoft.Json;
 
 namespace Microsoft.Bot.Builder.AI.QnA
@@ -38,6 +38,7 @@ namespace Microsoft.Bot.Builder.AI.QnA
         public IEnumerable<JsonConverter> GetConverters(ResourceExplorer resourceExplorer, Stack<string> paths)
         {
             yield return new ArrayExpressionConverter<Metadata>();
+            yield return new ObjectExpressionConverter<QnARequestContext>();
         }
     }
 }
