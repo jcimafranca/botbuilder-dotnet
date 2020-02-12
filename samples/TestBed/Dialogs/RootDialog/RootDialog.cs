@@ -91,24 +91,108 @@ namespace Microsoft.BotBuilderSamples
                         Actions = new List<Dialog>()
                         {
                             new SendActivity("Ambiguous! QnA and Help intent!"),
-                            new SetProperty()
+                            new SetProperties()
                             {
-                                Property = "dialog.disambigData",
-                                Value = "@{turn.recognized.intents.ChooseIntent}"
+                                Assignments = new List<PropertyAssignment>()
+                                {
+                                    new PropertyAssignment()
+                                    {
+                                        Property = "dialog.luisResult",
+                                        Value = "@{jPath(turn.recognized, \"$.candidates[?(@.id == 'Root_LUIS')]\")}"
+                                    },
+                                    new PropertyAssignment()
+                                    {
+                                        Property = "dialog.qnaResult",
+                                        Value = "@{jPath(turn.recognized, \"$.candidates[?(@.id == 'Root_QnA')]\")}"
+                                    }
+                                }
                             },
-                            new TextInput()
+                            new SendActivity("LUIS : @{json(dialog.luisResult).intent}"),
+                            new SendActivity("QnA : @{dialog.qnaResult}"),
+
+                            // add rules to determine winner before disambiguation
+                            // R1. L high (>0.9), Q low (<0.5) => LUIS
+                            new IfCondition()
                             {
-                                Prompt = new ActivityTemplate("@{chooseIntentCard()}"),
-                                Property = "turn.disambigResponse",
-                                AllowInterruptions = "false",
+                                Condition = "(dialog.luisResult.score >= 0.9 && dialog.qnaResult.score <= 0.5)",
+                                Actions = new List<Dialog>()
+                                {
+                                    new EmitEvent()
+                                    {
+                                        EventName = AdaptiveEvents.RecognizedIntent,
+                                        EventValue = "dialog.luisResult.result"
+                                    }
+                                }
                             },
 
-                            // find the recognizer result based on user's response
-                            new SetProperty()
+                            // R2. Q high, L low => QnA
+                            new IfCondition()
                             {
-                                Property = "turn.recognizerResultToUse",
-                                Value = "jpath(dialog.disambigData, )"
+                                Condition = "(dialog.luisResult.score <= 0.5 && dialog.qnaResult.score >= 0.9)",
+                                Actions = new List<Dialog>()
+                                {
+                                    new EmitEvent()
+                                    {
+                                        EventName = AdaptiveEvents.RecognizedIntent,
+                                        EventValue = "dialog.qnaResult.result"
+                                    }
+                                }
                             },
+
+                            // R3. Q exact match (>=0.95) => QnA
+                            new IfCondition()
+                            {
+                                Condition = "(dialog.qnaResult.score >= 0.95)",
+                                Actions = new List<Dialog>()
+                                {
+                                    new EmitEvent()
+                                    {
+                                        EventName = AdaptiveEvents.RecognizedIntent,
+                                        EventValue = "dialog.qnaResult.result"
+                                    }
+                                }
+                            },
+
+                            // R4. Q no match => LUIS
+                            new IfCondition()
+                            {
+                                Condition = "(dialog.qnaResult.score <= 0.05)",
+                                Actions = new List<Dialog>()
+                                {
+                                    new EmitEvent()
+                                    {
+                                        EventName = AdaptiveEvents.RecognizedIntent,
+                                        EventValue = "dialog.luisResult.result"
+                                    }
+                                }
+                            },
+                            
+                            new SendActivity("Presenting disambiguation"),
+                            new TextInput()
+                            {
+                                Property = "turn.userChooseInputChoice",
+                                Value = "@userChosenIntent",
+                                Prompt = new ActivityTemplate("chooseIntentResponseWithCard()")
+                            }
+                            
+                            //new SetProperty()
+                            //{
+                            //    Property = "dialog.disambigData",
+                            //    Value = "@{turn.recognized.candidates}"
+                            //},
+                            //new TextInput()
+                            //{
+                            //    Prompt = new ActivityTemplate("@{chooseIntentCard()}"),
+                            //    Property = "turn.disambigResponse",
+                            //    AllowInterruptions = "false",
+                            //},
+
+                            // find the recognizer result based on user's response
+                            //new SetProperty()
+                            //{
+                            //    Property = "turn.recognizerResultToUse",
+                            //    Value = "jpath(dialog.disambigData, )"
+                            //},
 
                             // add rules
                             // R1. L high (>0.9), Q low (<0.5) => LUIS
@@ -224,12 +308,19 @@ namespace Microsoft.BotBuilderSamples
 
         private static Recognizer MultiRecognizer()
         {
-            return new CrossTrainedRecognizerSet()
+            return new RecognizerSet()
             {
                 Recognizers = new List<Recognizer>()
                 {
-                    QnARecognizer(),
-                    GetLUISApp()
+                    new ValueRecognizer(),
+                    new CrossTrainedRecognizerSet()
+                    {
+                        Recognizers = new List<Recognizer>()
+                        {
+                            QnARecognizer(),
+                            GetLUISApp()
+                        }
+                    }
                 }
             };
         }

@@ -1,8 +1,85 @@
-﻿# chooseIntentCard
+﻿> new disambiguation card
+# chooseIntentResponseWithCard
+[Activity
+    Attachments = @{json(chooseIntentAdaptiveCard())}
+]
+
+# chooseIntentAdaptiveCard
+- ```
+{
+    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+    "version": "1.0",
+    "type": "AdaptiveCard",
+    "speak": "",
+    "body": [
+        {
+            "type": "TextBlock",
+            "text": "@{whichOneDidYouMean()}",
+            "weight": "Bolder"
+        },
+        {
+            "type": "TextBlock",
+            "text": "@{pickOne()}",
+            "separator": true
+        },
+        {
+            "type": "Input.ChoiceSet",
+            "placeholder": "Placeholder text",
+            "id": "userChosenIntent",
+            "choices": [
+                {
+                    "title": "@{getIntentReadBack()}",
+                    "value": "luis"
+                },
+                {
+                    "title": "@{getAnswerReadBack()}",
+                    "value": "qna"
+                },
+                {
+                    "title": "None of the above",
+                    "value": "none"
+                }
+            ],
+            "style": "expanded",
+            "value": "luis"
+        },
+        {
+            "type": "ActionSet",
+            "actions": [
+                {
+                    "type": "Action.Submit",
+                    "title": "Submit",
+                    "data": {
+                        "intent": "chooseIntentCardResponse"
+                    }
+                }
+            ]
+        }
+    ]
+}
+```
+
+
+# chooseIntentResponseWithSuggestedAction
 [Activity
     Text = @{whichOneDidYouMean()} @{pickOne()}
-    SuggestedActions = @{foreach(turn.recognized.intents.ChooseIntent, item, getRecResultReadBack(item.key, item.value))}
+    SuggestedActions = @{getIntentReadBack()} | @{getAnswerReadBack()} | @{noneOfTheChoices()}
 ]
+
+# noneOfTheChoices
+- Neither
+- Not either
+- None
+
+# getIntentReadBack
+- SWITCH : @{toLower(json(dialog.luisResult).intent)}
+- CASE : @{'help'}
+    - Escalate to a human
+- DEFAULT :
+    - @{json(dialog.luisResult).intent}
+
+# getAnswerReadBack
+- See answer from KB
 
 # pickOne
 - Can you pick one?
@@ -10,7 +87,7 @@
 
 # whichOneDidYouMean
 - I'm not sure which one you mean.
-- Hmmm, that's ambiguous.
+- Hmmm, I find that to be ambiguous.
 
 # getRecResultReadBack(key,value)
 - SWITCH : @{key}
