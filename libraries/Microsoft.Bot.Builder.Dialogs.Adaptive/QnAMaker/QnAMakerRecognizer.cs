@@ -103,20 +103,20 @@ namespace Microsoft.Bot.Builder.Dialogs.Adaptive.QnA.Recognizers
         /// A bool or boolean expression.
         /// </value>
         [DefaultValue(true)]
-        [JsonProperty("includeDialogNameInMetaData")]
-        public BoolExpression IncludeDialogNameInMetaData { get; set; } = true;
+        [JsonProperty("includeDialogNameInMetadata")]
+        public BoolExpression IncludeDialogNameInMetadata { get; set; } = true;
 
         /// <summary>
         /// Gets or sets an expression to evaluate to set additional metadata name value pairs.
         /// </summary>
-        /// <value>An expression to evaluate for pairs of metadata</value>
+        /// <value>An expression to evaluate for pairs of metadata.</value>
         [JsonProperty("metadata")]
         public ArrayExpression<Metadata> Metadata { get; set; }
 
         /// <summary>
         /// Gets or sets an expression to evaluate to set the context.
         /// </summary>
-        /// <value>An expression to evaluate to to qnaId to pass as context.</value>
+        /// <value>An expression to evaluate to QnARequestContext to pass as context.</value>
         [JsonProperty("context")]
         public ObjectExpression<QnARequestContext> Context { get; set; }
 
@@ -137,7 +137,7 @@ namespace Microsoft.Bot.Builder.Dialogs.Adaptive.QnA.Recognizers
             };
 
             List<Metadata> filters = new List<Metadata>();
-            if (IncludeDialogNameInMetaData.GetValue(dcState))
+            if (IncludeDialogNameInMetadata.GetValue(dcState))
             {
                 filters.Add(new Metadata() { Name = "dialogName", Value = dialogContext.ActiveDialog.Id });
             }
