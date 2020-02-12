@@ -1,19 +1,15 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using System.Threading.Tasks;
-using Microsoft.Bot.Builder.AI.Luis;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Dialogs.Adaptive;
 using Microsoft.Bot.Builder.Dialogs.Adaptive.Actions;
 using Microsoft.Bot.Builder.Dialogs.Adaptive.Conditions;
 using Microsoft.Bot.Builder.Dialogs.Adaptive.Generators;
 using Microsoft.Bot.Builder.Dialogs.Adaptive.Input;
-using Microsoft.Bot.Builder.Dialogs.Adaptive.QnA;
 using Microsoft.Bot.Builder.Dialogs.Adaptive.QnA.Recognizers;
 using Microsoft.Bot.Builder.Dialogs.Adaptive.Recognizers;
 using Microsoft.Bot.Builder.Dialogs.Adaptive.Templates;
 using Microsoft.Bot.Builder.LanguageGeneration;
-using Microsoft.Bot.Expressions;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.BotBuilderSamples
@@ -30,17 +26,7 @@ namespace Microsoft.BotBuilderSamples
             {
                 Generator = new TemplateEngineLanguageGenerator(_lgFile),
 
-                Recognizer = new RegexRecognizer()
-                {
-                    Intents = new List<IntentPattern>()
-                    {
-                        new IntentPattern()
-                        {
-                            Intent = "Greeting",
-                            Pattern = "hi"
-                        }
-                    }
-                },
+                Recognizer = MultiRecognizer(),
 
                 // Recognizer = MultiRecognizer(),
                 Triggers = new List<OnCondition>()
@@ -100,6 +86,50 @@ namespace Microsoft.BotBuilderSamples
                             }
                         }
                     },
+                    new OnChooseIntent()
+                    {
+                        Actions = new List<Dialog>()
+                        {
+                            new SendActivity("Ambiguous! QnA and Help intent!"),
+                            new SetProperty()
+                            {
+                                Property = "dialog.disambigData",
+                                Value = "@{turn.recognized.intents.ChooseIntent}"
+                            },
+                            new TextInput()
+                            {
+                                Prompt = new ActivityTemplate("@{chooseIntentCard()}"),
+                                Property = "turn.disambigResponse",
+                                AllowInterruptions = "false",
+                            },
+
+                            // find the recognizer result based on user's response
+                            new SetProperty()
+                            {
+                                Property = "turn.recognizerResultToUse",
+                                Value = "jpath(dialog.disambigData, )"
+                            },
+
+                            // add rules
+                            // R1. L high (>0.9), Q low (<0.5) => LUIS
+                            // R2. Q high, L low => QnA
+                            // R3. Q exact match (>=0.95) => QnA
+                            // R4. Q no match => LUIS
+
+                            //new SendActivity("@{#chooseIntent}")
+
+                            //new SendActivity("[@{turn.recognized.intents.chooseIntent.QnAMatch.intents.QnAMatch.score}] Answer from KB: @{turn.recognized.intents.chooseIntent.QnAMatch.entities.answer[0]}"),
+                            //new SendActivity("[@{turn.recognized.intents.chooseIntent.Help.intents.Help.score}] LUIS intent: Help (there is no way to dynamically get this from recognizer result and needs to be hard coded)"),
+                            
+                            // score based filtering
+
+                            // choiceInput (whichintent) - qna .vs. help
+                            // user picked help
+                            // now, how do I run the actions tied to OnIntent("help"
+
+                            //new SendActivity("@{renderDisambiguationChoices(turn.recognized.intents.ChooseIntent)}")
+                        }
+                    },
                     new OnIntent()
                     {
                         Intent = "Greeting",
@@ -124,23 +154,6 @@ namespace Microsoft.BotBuilderSamples
                         Actions = new List<Dialog>()
                         {
                             new SendActivity("Let's get your user profile. LUIS recognizer won!")
-                        }
-                    },
-                    new OnChooseIntent()
-                    {
-                        // This is nice so you can handle different ambiguous intents via different triggers
-                        Intents = new List<string>()
-                        {
-                            "QnAMatch",
-                            "Help"
-                        },
-                        Actions = new List<Dialog>()
-                        {
-                            new SendActivity("Ambiguous! QnA and Help intent!"),
-                            new SendActivity("[@{turn.recognized.intents.chooseIntent.QnAMatch.intents.QnAMatch.score}] Answer from KB: @{turn.recognized.intents.chooseIntent.QnAMatch.entities.answer[0]}"),
-                            new SendActivity("[@{turn.recognized.intents.chooseIntent.Help.intents.Help.score}] LUIS intent: Help (there is no way to dynamically get this from recognizer result and needs to be hard coded)")
-                            
-                            //new SendActivity("@{renderDisambiguationChoices(turn.recognized.intents.ChooseIntent)}")
                         }
                     },
                     new OnUnknownIntent()
@@ -202,9 +215,9 @@ namespace Microsoft.BotBuilderSamples
             return new QnAMakerRecognizer()
             {
                 Id = "Root_QnA",
-                HostName = "'https://vk-test-qna.azurewebsites.net/qnamaker'",
-                EndpointKey = "'8e744f2e-2f80-4c16-bb68-7eb2a088726f'",
-                KnowledgeBaseId = "'206eab69-6573-4a8d-939b-63a1a2511d11'",
+                HostName = "https://vk-test-qna.azurewebsites.net/qnamaker",
+                EndpointKey = "8e744f2e-2f80-4c16-bb68-7eb2a088726f",
+                KnowledgeBaseId = "206eab69-6573-4a8d-939b-63a1a2511d11",
                 Top = 10
             };
         }

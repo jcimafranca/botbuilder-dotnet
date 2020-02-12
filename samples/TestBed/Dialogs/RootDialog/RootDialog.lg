@@ -1,4 +1,29 @@
-﻿# GreetingReply
+﻿# chooseIntentCard
+[Activity
+    Text = @{whichOneDidYouMean()} @{pickOne()}
+    SuggestedActions = @{foreach(turn.recognized.intents.ChooseIntent, item, getRecResultReadBack(item.key, item.value))}
+]
+
+# pickOne
+- Can you pick one?
+- Can you help clarify by choosing one?
+
+# whichOneDidYouMean
+- I'm not sure which one you mean.
+- Hmmm, that's ambiguous.
+
+# getRecResultReadBack(key,value)
+- SWITCH : @{key}
+- CASE : @{'Root_LUIS'}
+    - @{first(foreach(value.intents, x, x.key))}
+- CASE : @{'Root_QnA'}
+    - @{first(foreach(value.intents, x, x.key))}
+- DEFAULT :
+    - None of the above
+
+> everything else.
+
+# GreetingReply
 [Activity
     Text = Hi there! I'm a demo bot! Nice to meet you. 
     SuggestedActions = @{createArray('Get started', 'Cancel')}

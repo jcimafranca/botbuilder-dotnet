@@ -246,7 +246,7 @@ namespace Microsoft.Bot.Builder
             }
 
             var cachedState = turnContext.TurnState.Get<CachedBotState>(_contextServiceKey);
-
+            
             // If types are not used by storage serialization, and Newtonsoft is the serializer,
             // use Newtonsoft to convert the object to the type expected.
             if (cachedState.State[propertyName] is JObject obj)
