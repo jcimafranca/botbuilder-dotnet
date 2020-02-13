@@ -309,6 +309,36 @@ namespace Microsoft.Bot.Builder.Dialogs.Adaptive
             // Save into turn
             dcState.SetValue(TurnPath.DIALOGEVENT, dialogEvent);
 
+            // some dialogevents get promoted into turn state for general access outside of the dialogevent.
+            // This allows events to be fired (in the case of ChooseIntent), or in interruption (Activity) 
+            // Triggers all expressed against turn.recognized or turn.activity, and this mapping maintains that 
+            // any event that is emitted updates those for the rest of rule evaluation.
+            switch (dialogEvent.Name)
+            {
+                case AdaptiveEvents.RecognizedIntent:
+                    {
+                        // we have received a RecognizedIntent event
+                        // get the value and promote to turn.recognized, topintent,topscore and lastintent
+                        var recognizedResult = dcState.GetValue<RecognizerResult>($"{TurnPath.DIALOGEVENT}.value");
+                        var (name, score) = recognizedResult.GetTopScoringIntent();
+                        dcState.SetValue(TurnPath.RECOGNIZED, recognizedResult);
+                        dcState.SetValue(TurnPath.TOPINTENT, name);
+                        dcState.SetValue(TurnPath.TOPSCORE, score);
+                        dcState.SetValue(DialogPath.LastIntent, name);
+
+                        // process entities for ambiguity processing (We do this regardless of who handles the event)
+                        ProcessEntities(sequenceContext);
+                        break;
+                    }
+
+                case AdaptiveEvents.ActivityReceived:
+                    {
+                        // We received an ActivityReceived event, promote the activity into turn.activity
+                        dcState.SetValue(TurnPath.ACTIVITY, dialogEvent.Value);
+                        break;
+                    }
+            }
+
             EnsureDependenciesInstalled();
 
             // Count of events processed
@@ -386,7 +416,6 @@ namespace Microsoft.Bot.Builder.Dialogs.Adaptive
                                 Value = recognized,
                                 Bubble = false
                             };
-                            ProcessEntities(sequenceContext);
                             handled = await ProcessEventAsync(sequenceContext, dialogEvent: recognizedIntentEvent, preBubble: true, cancellationToken: cancellationToken).ConfigureAwait(false);
                         }
 
