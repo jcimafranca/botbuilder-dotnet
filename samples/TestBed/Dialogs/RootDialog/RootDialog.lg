@@ -29,11 +29,11 @@
             "choices": [
                 {
                     "title": "@{getIntentReadBack()}",
-                    "value": "luis"
+                    "value": "luisResult"
                 },
                 {
                     "title": "@{getAnswerReadBack()}",
-                    "value": "qna"
+                    "value": "qnaResult"
                 },
                 {
                     "title": "None of the above",
@@ -72,11 +72,11 @@
 - None
 
 # getIntentReadBack
-- SWITCH : @{toLower(json(dialog.luisResult).intent)}
+- SWITCH : @{toLower(dialog.luisResult.intent)}
 - CASE : @{'help'}
     - Escalate to a human
 - DEFAULT :
-    - @{json(dialog.luisResult).intent}
+    - @{dialog.luisResult.intent}
 
 # getAnswerReadBack
 - See answer from KB

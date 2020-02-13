@@ -90,7 +90,7 @@ namespace Microsoft.BotBuilderSamples
                     {
                         Actions = new List<Dialog>()
                         {
-                            new SendActivity("Ambiguous! QnA and Help intent!"),
+                            //new SendActivity("Ambiguous! QnA and Help intent!"),
                             new SetProperties()
                             {
                                 Assignments = new List<PropertyAssignment>()
@@ -98,18 +98,16 @@ namespace Microsoft.BotBuilderSamples
                                     new PropertyAssignment()
                                     {
                                         Property = "dialog.luisResult",
-                                        Value = "@{jPath(turn.recognized, \"$.candidates[?(@.id == 'Root_LUIS')]\")}"
+                                        Value = "=jPath(turn.recognized, \"$.candidates[?(@.id == 'Root_LUIS')]\")"
                                     },
                                     new PropertyAssignment()
                                     {
                                         Property = "dialog.qnaResult",
-                                        Value = "@{jPath(turn.recognized, \"$.candidates[?(@.id == 'Root_QnA')]\")}"
-                                    }
+                                        Value = "=jPath(turn.recognized, \"$.candidates[?(@.id == 'Root_QnA')]\")"
+                                    },
                                 }
                             },
-                            new SendActivity("LUIS : @{json(dialog.luisResult).intent}"),
-                            new SendActivity("QnA : @{dialog.qnaResult}"),
-
+                            
                             // add rules to determine winner before disambiguation
                             // R1. L high (>0.9), Q low (<0.5) => LUIS
                             new IfCondition()
@@ -121,7 +119,7 @@ namespace Microsoft.BotBuilderSamples
                                     {
                                         EventName = AdaptiveEvents.RecognizedIntent,
                                         EventValue = "dialog.luisResult.result"
-                                    }
+                                    },
                                 }
                             },
 
@@ -166,52 +164,26 @@ namespace Microsoft.BotBuilderSamples
                                     }
                                 }
                             },
-                            
-                            new SendActivity("Presenting disambiguation"),
                             new TextInput()
                             {
-                                Property = "turn.userChooseInputChoice",
-                                Value = "@userChosenIntent",
-                                Prompt = new ActivityTemplate("chooseIntentResponseWithCard()")
+                                Property = "turn.intentChoice",
+                                Prompt = new ActivityTemplate("@{chooseIntentResponseWithCard()}"),
+                                Value = "=@userChosenIntent"
+                            },
+                            new SendActivity("This is what I have from you - @{turn.intentChoice}"),
+                            new IfCondition()
+                            {
+                                Condition = "turn.intentChoice != 'none'",
+                                Actions = new List<Dialog>()
+                                {
+                                    new SendActivity("Sending you over to - @{turn.intentChoice"),
+                                    new EmitEvent()
+                                    {
+                                        EventName = AdaptiveEvents.RecognizedIntent,
+                                        EventValue = "@{dialog[turn.intentChoice].result}"
+                                    }
+                                }
                             }
-                            
-                            //new SetProperty()
-                            //{
-                            //    Property = "dialog.disambigData",
-                            //    Value = "@{turn.recognized.candidates}"
-                            //},
-                            //new TextInput()
-                            //{
-                            //    Prompt = new ActivityTemplate("@{chooseIntentCard()}"),
-                            //    Property = "turn.disambigResponse",
-                            //    AllowInterruptions = "false",
-                            //},
-
-                            // find the recognizer result based on user's response
-                            //new SetProperty()
-                            //{
-                            //    Property = "turn.recognizerResultToUse",
-                            //    Value = "jpath(dialog.disambigData, )"
-                            //},
-
-                            // add rules
-                            // R1. L high (>0.9), Q low (<0.5) => LUIS
-                            // R2. Q high, L low => QnA
-                            // R3. Q exact match (>=0.95) => QnA
-                            // R4. Q no match => LUIS
-
-                            //new SendActivity("@{#chooseIntent}")
-
-                            //new SendActivity("[@{turn.recognized.intents.chooseIntent.QnAMatch.intents.QnAMatch.score}] Answer from KB: @{turn.recognized.intents.chooseIntent.QnAMatch.entities.answer[0]}"),
-                            //new SendActivity("[@{turn.recognized.intents.chooseIntent.Help.intents.Help.score}] LUIS intent: Help (there is no way to dynamically get this from recognizer result and needs to be hard coded)"),
-                            
-                            // score based filtering
-
-                            // choiceInput (whichintent) - qna .vs. help
-                            // user picked help
-                            // now, how do I run the actions tied to OnIntent("help"
-
-                            //new SendActivity("@{renderDisambiguationChoices(turn.recognized.intents.ChooseIntent)}")
                         }
                     },
                     new OnIntent()
