@@ -161,6 +161,11 @@ namespace Microsoft.Bot.Builder.Dialogs.Adaptive.Recognizers
                             MergeArrayProperty(result.Entities, entityProperty, recognizerResult.Entities);
                         }
                     }
+
+                foreach (var property in result.Properties)
+                {
+                    recognizerResult.Properties[property.Key] = property.Value;
+                }
             }
 
             if (!recognizerResult.Intents.Any())

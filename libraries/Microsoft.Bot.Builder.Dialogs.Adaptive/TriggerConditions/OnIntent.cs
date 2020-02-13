@@ -63,7 +63,7 @@ namespace Microsoft.Bot.Builder.Dialogs.Adaptive.Conditions
                 throw new ArgumentNullException(nameof(this.Intent));
             }
 
-            var intentExpression = Expression.Parse($"{TurnPath.RECOGNIZED}.intent == '{this.Intent.TrimStart('#')}'");
+            var intentExpression = Expression.Parse($"{TurnPath.DIALOGEVENT}.value.intents.{this.Intent.TrimStart('#')} != null");
 
             // build expression to be INTENT AND (@ENTITY1 != null AND @ENTITY2 != null)
             if (this.Entities.Any())
@@ -72,12 +72,7 @@ namespace Microsoft.Bot.Builder.Dialogs.Adaptive.Conditions
                     intentExpression,
                     Expression.AndExpression(this.Entities.Select(entity =>
                     {
-                        if (entity.StartsWith("@") || entity.StartsWith(TurnPath.RECOGNIZED, StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            return Expression.Parse($"exists({entity})");
-                        }
-
-                        return Expression.Parse($"exists(@{entity})");
+                        return Expression.Parse($"exists(@{entity.TrimStart('@')})");
                     }).ToArray()));
             }
 
