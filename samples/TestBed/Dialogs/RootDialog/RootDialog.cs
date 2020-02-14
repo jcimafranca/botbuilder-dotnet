@@ -53,7 +53,7 @@ namespace Microsoft.BotBuilderSamples
                             new SetProperty()
                             {
                                 Property = "dialog.qna.multiTurn.context",
-                                Value = "turn.recognized.answers[0].context.prompts"
+                                Value = "=turn.recognized.answers[0].context.prompts"
                             },
                             new TextInput()
                             {
@@ -64,25 +64,37 @@ namespace Microsoft.BotBuilderSamples
                             new SetProperty()
                             {
                                 Property = "turn.qnaMatchFromContext",
-                                Value = "where(dialog.qna.multiTurn.context, item, item.displayText == turn.qnaMultiTurnResponse)"
+                                Value = "=where(dialog.qna.multiTurn.context, item, item.displayText == turn.qnaMultiTurnResponse)"
                             },
+                            
                             new IfCondition()
                             {
                                 Condition = "turn.qnaMatchFromContext && count(turn.qnaMatchFromContext) > 0",
                                 Actions = new List<Dialog>()
                                 {
-                                    new SetProperty()
+                                    new SetProperties()
                                     {
-                                        Property = "turn.qnaId",
-                                        Value = "turn.qnaMatchFromContext[0].qnaId"
-                                    }
+                                        Assignments = new List<PropertyAssignment>()
+                                        {
+                                            new PropertyAssignment()
+                                            {
+                                                Property = "dialog.qnaContext",
+                                                Value = "={}"
+                                            },
+                                            new PropertyAssignment()
+                                            {
+                                                Property = "dialog.qnaContext.PreviousQnAId",
+                                                Value = "=turn.qnaMatchFromContext[0].qnaId"
+                                            }
+                                        }
+                                    },
+                                    new SendActivity("Context set to @{dialog.qnaContext}"),
                                 }
                             },
                             new EmitEvent()
                             {
                                 EventName = AdaptiveEvents.ActivityReceived,
                                 EventValue = "turn.activity",
-                                BubbleEvent = true
                             }
                         }
                     },
@@ -108,14 +120,6 @@ namespace Microsoft.BotBuilderSamples
                                 }
                             },
 
-                            // testing emit event
-                            new SendActivity("QnA with eventValue = @{dialog.qnaResult.result}"),
-/*                            new EmitEvent()
-                            {
-                                EventName = AdaptiveEvents.RecognizedIntent,
-                                EventValue = "=dialog.qnaResult.result",
-                            },
-
                             // add rules to determine winner before disambiguation
                             // R1. L high (>0.9), Q low (<0.5) => LUIS
                             new IfCondition()
@@ -128,6 +132,7 @@ namespace Microsoft.BotBuilderSamples
                                         EventName = AdaptiveEvents.RecognizedIntent,
                                         EventValue = "=dialog.luisResult.result"
                                     },
+                                    new BreakLoop(),
                                 }
                             },
 
@@ -141,7 +146,8 @@ namespace Microsoft.BotBuilderSamples
                                     {
                                         EventName = AdaptiveEvents.RecognizedIntent,
                                         EventValue = "=dialog.qnaResult.result"
-                                    }
+                                    },
+                                    new BreakLoop()
                                 }
                             },
 
@@ -156,6 +162,7 @@ namespace Microsoft.BotBuilderSamples
                                         EventName = AdaptiveEvents.RecognizedIntent,
                                         EventValue = "=dialog.qnaResult.result"
                                     },
+                                    new GotoAction("Exit")
                                 }
                             },
 
@@ -169,10 +176,10 @@ namespace Microsoft.BotBuilderSamples
                                     {
                                         EventName = AdaptiveEvents.RecognizedIntent,
                                         EventValue = "=dialog.luisResult.result"
-                                    }
+                                    },
+                                    new BreakLoop()
                                 }
                             },
-*/                            
                             new TextInput()
                             {
                                 Property = "turn.intentChoice",
@@ -184,7 +191,7 @@ namespace Microsoft.BotBuilderSamples
                                 Condition = "turn.intentChoice != 'none'",
                                 Actions = new List<Dialog>()
                                 {
-                                    new SendActivity("Sending you over to - @{turn.intentChoice} with eventValue = @{getProperty(dialog, turn.intentChoice).result}"),
+                                    new SendActivity("Sending you over to - @{turn.intentChoice} with eventValue = @{dialog[turn.intentChoice].result}"),
                                     new EmitEvent()
                                     {
                                         EventName = AdaptiveEvents.RecognizedIntent,
@@ -194,7 +201,8 @@ namespace Microsoft.BotBuilderSamples
                                         //EventValue = "=dialog[turn.intentChoice].result"
                                     }
                                 }
-                            }
+                            },
+                            new IfCondition("false") { Id = "Exit" }
                         }
                     },
                     new OnIntent()
@@ -221,6 +229,14 @@ namespace Microsoft.BotBuilderSamples
                         Actions = new List<Dialog>()
                         {
                             new SendActivity("Let's get your user profile. LUIS recognizer won!")
+                        }
+                    },
+                    new OnIntent()
+                    {
+                        Intent = "Help",
+                        Actions = new List<Dialog>()
+                        {
+                            new SendActivity("Getting you to a human! ")
                         }
                     },
                     new OnUnknownIntent()
@@ -285,7 +301,8 @@ namespace Microsoft.BotBuilderSamples
                 HostName = "https://vk-test-qna.azurewebsites.net/qnamaker",
                 EndpointKey = "8e744f2e-2f80-4c16-bb68-7eb2a088726f",
                 KnowledgeBaseId = "206eab69-6573-4a8d-939b-63a1a2511d11",
-                Top = 10
+                Top = 10,
+                Context = "dialog.qnaContext"
             };
         }
 
