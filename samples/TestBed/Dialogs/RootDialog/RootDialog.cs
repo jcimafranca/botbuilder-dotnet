@@ -94,7 +94,7 @@ namespace Microsoft.BotBuilderSamples
                             new EmitEvent()
                             {
                                 EventName = AdaptiveEvents.ActivityReceived,
-                                EventValue = "turn.activity",
+                                EventValue = "=turn.activity",
                             }
                         }
                     },
