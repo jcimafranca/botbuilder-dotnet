@@ -345,27 +345,6 @@ namespace Microsoft.Bot.Builder.Dialogs.Adaptive
             var count = dcState.GetValue<uint>(DialogPath.EventCounter);
             dcState.SetValue(DialogPath.EventCounter, ++count);
 
-            // some dialogevents get kept in turn state
-            switch (dialogEvent.Name)
-            {
-                case AdaptiveEvents.RecognizedIntent:
-                    {
-                        dcState.SetValue(TurnPath.RECOGNIZED, dialogEvent.Value);
-                        var recognized = dcState.GetValue<RecognizerResult>($"{TurnPath.DIALOGEVENT}.value");
-                        var (name, score) = recognized.GetTopScoringIntent();
-                        dcState.SetValue(TurnPath.TOPINTENT, name);
-                        dcState.SetValue(DialogPath.LastIntent, name);
-                        dcState.SetValue(TurnPath.TOPSCORE, score);
-                        break;
-                    }
-
-                case AdaptiveEvents.ActivityReceived:
-                    {
-                        dcState.SetValue(TurnPath.ACTIVITY, dialogEvent.Value);
-                        break;
-                    }
-            }
-
             // Look for triggered evt
             var handled = await QueueFirstMatchAsync(sequenceContext, dialogEvent, preBubble, cancellationToken).ConfigureAwait(false);
 

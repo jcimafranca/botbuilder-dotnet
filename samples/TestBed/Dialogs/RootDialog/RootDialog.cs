@@ -107,18 +107,26 @@ namespace Microsoft.BotBuilderSamples
                                     },
                                 }
                             },
-                            
+
+                            // testing emit event
+                            new SendActivity("QnA with eventValue = @{dialog.qnaResult.result}"),
+/*                            new EmitEvent()
+                            {
+                                EventName = AdaptiveEvents.RecognizedIntent,
+                                EventValue = "=dialog.qnaResult.result",
+                            },
+
                             // add rules to determine winner before disambiguation
                             // R1. L high (>0.9), Q low (<0.5) => LUIS
                             new IfCondition()
                             {
-                                Condition = "(dialog.luisResult.score >= 0.9 && dialog.qnaResult.score <= 0.5)",
+                                Condition = "dialog.luisResult.score >= 0.9 && dialog.qnaResult.score <= 0.5",
                                 Actions = new List<Dialog>()
                                 {
                                     new EmitEvent()
                                     {
                                         EventName = AdaptiveEvents.RecognizedIntent,
-                                        EventValue = "dialog.luisResult.result"
+                                        EventValue = "=dialog.luisResult.result"
                                     },
                                 }
                             },
@@ -126,13 +134,13 @@ namespace Microsoft.BotBuilderSamples
                             // R2. Q high, L low => QnA
                             new IfCondition()
                             {
-                                Condition = "(dialog.luisResult.score <= 0.5 && dialog.qnaResult.score >= 0.9)",
+                                Condition = "dialog.luisResult.score <= 0.5 && dialog.qnaResult.score >= 0.9",
                                 Actions = new List<Dialog>()
                                 {
                                     new EmitEvent()
                                     {
                                         EventName = AdaptiveEvents.RecognizedIntent,
-                                        EventValue = "dialog.qnaResult.result"
+                                        EventValue = "=dialog.qnaResult.result"
                                     }
                                 }
                             },
@@ -140,47 +148,50 @@ namespace Microsoft.BotBuilderSamples
                             // R3. Q exact match (>=0.95) => QnA
                             new IfCondition()
                             {
-                                Condition = "(dialog.qnaResult.score >= 0.95)",
+                                Condition = "dialog.qnaResult.score >= 0.95",
                                 Actions = new List<Dialog>()
                                 {
                                     new EmitEvent()
                                     {
                                         EventName = AdaptiveEvents.RecognizedIntent,
-                                        EventValue = "dialog.qnaResult.result"
-                                    }
+                                        EventValue = "=dialog.qnaResult.result"
+                                    },
                                 }
                             },
 
                             // R4. Q no match => LUIS
                             new IfCondition()
                             {
-                                Condition = "(dialog.qnaResult.score <= 0.05)",
+                                Condition = "dialog.qnaResult.score <= 0.05",
                                 Actions = new List<Dialog>()
                                 {
                                     new EmitEvent()
                                     {
                                         EventName = AdaptiveEvents.RecognizedIntent,
-                                        EventValue = "dialog.luisResult.result"
+                                        EventValue = "=dialog.luisResult.result"
                                     }
                                 }
                             },
+*/                            
                             new TextInput()
                             {
                                 Property = "turn.intentChoice",
                                 Prompt = new ActivityTemplate("@{chooseIntentResponseWithCard()}"),
                                 Value = "=@userChosenIntent"
                             },
-                            new SendActivity("This is what I have from you - @{turn.intentChoice}"),
                             new IfCondition()
                             {
                                 Condition = "turn.intentChoice != 'none'",
                                 Actions = new List<Dialog>()
                                 {
-                                    new SendActivity("Sending you over to - @{turn.intentChoice"),
+                                    new SendActivity("Sending you over to - @{turn.intentChoice} with eventValue = @{getProperty(dialog, turn.intentChoice).result}"),
                                     new EmitEvent()
                                     {
                                         EventName = AdaptiveEvents.RecognizedIntent,
-                                        EventValue = "@{dialog[turn.intentChoice].result}"
+                                        EventValue = "=getProperty(dialog, turn.intentChoice).result"
+
+                                        // Bug: dynamic index is broken
+                                        //EventValue = "=dialog[turn.intentChoice].result"
                                     }
                                 }
                             }
