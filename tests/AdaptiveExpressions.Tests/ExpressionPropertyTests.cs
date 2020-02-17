@@ -8,6 +8,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using AdaptiveExpressions;
 using AdaptiveExpressions.Converters;
 using AdaptiveExpressions.Properties;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
