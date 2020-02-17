@@ -41,7 +41,7 @@ namespace Microsoft.BotBuilderSamples
                         {
                             new SendActivity()
                             {
-                                Activity = new ActivityTemplate("Here's what I have from QnA Maker - @{@answer}"),
+                                Activity = new ActivityTemplate("Here's what I have from QnA Maker - ${@answer}"),
                             }
                         }
                     },
@@ -57,7 +57,7 @@ namespace Microsoft.BotBuilderSamples
                             },
                             new TextInput()
                             {
-                                Prompt = new ActivityTemplate("@{ShowMultiTurnAnswer()}"),
+                                Prompt = new ActivityTemplate("${ShowMultiTurnAnswer()}"),
                                 Property = "turn.qnaMultiTurnResponse",
                                 AllowInterruptions = "false",
                             },
@@ -88,7 +88,7 @@ namespace Microsoft.BotBuilderSamples
                                             }
                                         }
                                     },
-                                    new SendActivity("Context set to @{dialog.qnaContext}"),
+                                    new SendActivity("Context set to ${dialog.qnaContext}"),
                                 }
                             },
                             new EmitEvent()
@@ -183,7 +183,7 @@ namespace Microsoft.BotBuilderSamples
                             new TextInput()
                             {
                                 Property = "turn.intentChoice",
-                                Prompt = new ActivityTemplate("@{chooseIntentResponseWithCard()}"),
+                                Prompt = new ActivityTemplate("${chooseIntentResponseWithCard()}"),
                                 Value = "=@userChosenIntent"
                             },
                             new IfCondition()
@@ -191,7 +191,7 @@ namespace Microsoft.BotBuilderSamples
                                 Condition = "turn.intentChoice != 'none'",
                                 Actions = new List<Dialog>()
                                 {
-                                    new SendActivity("Sending you over to - @{turn.intentChoice} with eventValue = @{dialog[turn.intentChoice].result}"),
+                                    new SendActivity("Sending you over to - ${turn.intentChoice} with eventValue = ${dialog[turn.intentChoice].result}"),
                                     new EmitEvent()
                                     {
                                         EventName = AdaptiveEvents.RecognizedIntent,
@@ -220,7 +220,7 @@ namespace Microsoft.BotBuilderSamples
                                 OutputFormat = AttachmentOutputFormat.All
                             },
                             new SendActivity("I have an attachment!"),
-                            new SendActivity("@{dialog.attachment}")
+                            new SendActivity("${dialog.attachment}")
                         }
                     },
                     new OnIntent()
@@ -284,8 +284,8 @@ namespace Microsoft.BotBuilderSamples
                             Condition = "dialog.foreach.value.name != turn.activity.recipient.name",
                             Actions = new List<Dialog>()
                             {
-                                new SendActivity("I have @{coalesce(settings.key, 'error')}"),
-                                new SendActivity("@{WelcomeUser()}")
+                                new SendActivity("I have ${coalesce(settings.key, 'error')}"),
+                                new SendActivity("${WelcomeUser()}")
                             }
                         }
                     }

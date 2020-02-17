@@ -1,7 +1,7 @@
 ﻿> new disambiguation card
 # chooseIntentResponseWithCard
 [Activity
-    Attachments = @{json(chooseIntentAdaptiveCard())}
+    Attachments = ${json(chooseIntentAdaptiveCard())}
 ]
 
 # chooseIntentAdaptiveCard
@@ -14,12 +14,12 @@
     "body": [
         {
             "type": "TextBlock",
-            "text": "@{whichOneDidYouMean()}",
+            "text": "${whichOneDidYouMean()}",
             "weight": "Bolder"
         },
         {
             "type": "TextBlock",
-            "text": "@{pickOne()}",
+            "text": "${pickOne()}",
             "separator": true
         },
         {
@@ -28,11 +28,11 @@
             "id": "userChosenIntent",
             "choices": [
                 {
-                    "title": "@{getIntentReadBack()}",
+                    "title": "${getIntentReadBack()}",
                     "value": "luisResult"
                 },
                 {
-                    "title": "@{getAnswerReadBack()}",
+                    "title": "${getAnswerReadBack()}",
                     "value": "qnaResult"
                 },
                 {
@@ -62,8 +62,8 @@
 
 # chooseIntentResponseWithSuggestedAction
 [Activity
-    Text = @{whichOneDidYouMean()} @{pickOne()}
-    SuggestedActions = @{getIntentReadBack()} | @{getAnswerReadBack()} | @{noneOfTheChoices()}
+    Text = ${whichOneDidYouMean()} ${pickOne()}
+    SuggestedActions = ${getIntentReadBack()} | ${getAnswerReadBack()} | ${noneOfTheChoices()}
 ]
 
 # noneOfTheChoices
@@ -72,11 +72,11 @@
 - None
 
 # getIntentReadBack
-- SWITCH : @{toLower(dialog.luisResult.intent)}
-- CASE : @{'help'}
+- SWITCH : ${toLower(dialog.luisResult.intent)}
+- CASE : ${'help'}
     - Escalate to a human
 - DEFAULT :
-    - @{dialog.luisResult.intent}
+    - ${dialog.luisResult.intent}
 
 # getAnswerReadBack
 - See answer from KB
@@ -90,11 +90,11 @@
 - Hmmm, I find that to be ambiguous.
 
 # getRecResultReadBack(key,value)
-- SWITCH : @{key}
-- CASE : @{'Root_LUIS'}
-    - @{first(foreach(value.intents, x, x.key))}
-- CASE : @{'Root_QnA'}
-    - @{first(foreach(value.intents, x, x.key))}
+- SWITCH : ${key}
+- CASE : ${'Root_LUIS'}
+    - ${first(foreach(value.intents, x, x.key))}
+- CASE : ${'Root_QnA'}
+    - ${first(foreach(value.intents, x, x.key))}
 - DEFAULT :
     - None of the above
 
@@ -103,7 +103,7 @@
 # GreetingReply
 [Activity
     Text = Hi there! I'm a demo bot! Nice to meet you. 
-    SuggestedActions = @{createArray('Get started', 'Cancel')}
+    SuggestedActions = ${createArray('Get started', 'Cancel')}
 ]
 
 # GlobalHelp
@@ -122,30 +122,30 @@
 ]
 
 # GreetUser
-- OK @{RandName()}, let's start again. \[Rand\]
-- Ok @{RandName()}, let's start over. \[Rand\]
+- OK ${RandName()}, let's start again. \[Rand\]
+- Ok ${RandName()}, let's start over. \[Rand\]
 - No problem, let's start again.
 - Done, let's start over.
-- Sure thing @{RandName()}, we can start over. \[Rand\]
+- Sure thing ${RandName()}, we can start over. \[Rand\]
 
 # RandName 
-- IF: @{user.name && rand(0, 1000) > 1}
-    - @{concat(' ', CapitalizeFirstLetter(user.name))}
+- IF: ${user.name && rand(0, 1000) > 1}
+    - ${concat(' ', CapitalizeFirstLetter(user.name))}
 - ELSE:
     - 
 
 # CapitalizeFirstLetter(name) 
-- @{concat(toUpper(substring(name, 0, 1)), substring(name, 1))}
+- ${concat(toUpper(substring(name, 0, 1)), substring(name, 1))}
 
 
 # renderDisambiguationChoices (collection)
-- @{join(foreach(collection, item, renderChoiceAsListItem(item)), '\n- ')}
+- ${join(foreach(collection, item, renderChoiceAsListItem(item)), '\n- ')}
 
 # renderChoiceAsListItem (item)
-- intent : @{item.intent}
+- intent : ${item.intent}
 
 # ShowMultiTurnAnswer
 [Activity
-    Text = @{@answer}
-    SuggestedActions = @{foreach(turn.recognized.answers[0].context.prompts, x, x.displayText)}
+    Text = ${@answer}
+    SuggestedActions = ${foreach(turn.recognized.answers[0].context.prompts, x, x.displayText)}
 ]
